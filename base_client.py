@@ -1907,6 +1907,7 @@ class BaseAPIService(object):
                 (contact_id is None and 'name' not in contact_info.keys() and 'last_name' not in contact_info.keys()):
             raise KeyError("Contact record must include 'contact_id' or a name ('name' or 'last_name')")
 
+        custom_fields = contact_info.pop('custom_fields', {})
         # Keys in contact_info need to be in CONTACT_PARAMS
         for key in contact_info.keys():
             if key not in self.CONTACT_PARAMS:
@@ -1915,6 +1916,8 @@ class BaseAPIService(object):
         # To urlencode properly, the python dict key must be set to 'contact[<key>]'
         # _key_coded_dict() is designed to automate this process
         contact_param = _key_coded_dict({'contact': contact_info})
+        for key, value in custom_fields.items():
+            contact_param['contact[custom_fields][%s]' % key] = value
         url_params.update(contact_param)
 
         if contact_id is None:
@@ -1950,6 +1953,58 @@ class BaseAPIService(object):
         see get_contact()
         """
         return self._upsert_contact(contact_info=contact_info, contact_id=contact_id)
+
+    def _unwrap_custom_fields(self, response):
+        """
+        Unwraps one level of indirection of custom field definitions
+        """
+        fields = {}
+        for item in response:
+            field = item['custom_field']
+            if field['list_options']:
+                field['list_options'] = dict(field['list_options'])
+            fields[field['name']] = field
+        return fields
+
+    def get_contact_custom_fields(self, filterable=False):
+        """
+        Returns contact custom field definitions
+
+        ARGUMENTS
+
+            filterable - if True, return only fields marked as filterable
+
+        RESPONSE STRUCTURE
+
+        Note: for dropdown fields, list_options is a dict mapping option IDs
+        to their values
+
+        {'field name':
+            {'custom_scope': ...
+             'date_time': ...
+             'field_type': ...
+             'filterable': ...
+             'for_contact': ...
+             'for_organisation': ...
+             'id': ...
+             'list_options': ...
+             'list_options_max': ...
+             'name': ...
+             'owner_id': ...
+             'owner_type': ...
+             'position': ...
+             'settings': ...
+             'value_editable_only_by_admin': ...
+            },
+        ...}
+        """
+        path = '/custom_fields'
+        url_noparam = self._build_resource_url('crm', 1, path, self.format)
+        url_params = {
+            'filterable': str(filterable).lower(),
+        }
+        response = self._get_data(url_noparam, url_params)
+        return self._unwrap_custom_fields(response)
 
     ##########################
     # Deals Functions and Constants
@@ -2212,11 +2267,14 @@ class BaseAPIService(object):
             return "Missing required attributes 'name' or 'entity_id'"
 
         final_params = dict()
+        custom_fields = deal_info.pop('custom_fields', {})
         for key in deal_info.keys():
             if key not in self.DEAL_PARAMS:
                 return "%s is not a legal deal attribute" % key
             else:
                 final_params[key] = deal_info[key]
+        for key, value in custom_fields.items():
+            final_params['custom_fields[%s]' % key] = value
 
         if deal_id is None:
             return self._post_data(url_noparam, final_params)
@@ -2251,6 +2309,45 @@ class BaseAPIService(object):
         see get_deal()
         """
         return self._upsert_deal(deal_info=deal_info, deal_id=deal_id)
+
+    def get_deal_custom_fields(self, filterable=False):
+        """
+        Returns deal custom field definitions
+
+        ARGUMENTS
+
+            filterable - if True, return only fields marked as filterable
+
+        RESPONSE STRUCTURE
+
+        Note: for dropdown fields, list_options is a dict mapping option IDs
+        to their values
+
+        {'field name':
+            {'custom_scope': ...
+             'date_time': ...
+             'field_type': ...
+             'filterable': ...
+             'id': ...
+             'list_options': ...
+             'list_options_max': ...
+             'name': ...
+             'owner_id': ...
+             'owner_type': ...
+             'position': ...
+             'settings': ...
+             'value_editable_only_by_admin': ...
+             'writable': ...
+            },
+        ...}
+        """
+        path = '/deal_custom_fields'
+        url_noparam = self._build_resource_url('sales', 1, path, self.format)
+        url_params = {
+            'filterable': str(filterable).lower(),
+        }
+        response = self._get_data(url_noparam, url_params)
+        return self._unwrap_custom_fields(response)
 
     ##########################
     # Sources Functions
@@ -2609,13 +2706,16 @@ class BaseAPIService(object):
             raise KeyError("Lead record must include 'lead_id' or a name ('last_name' or 'company_name')")
 
         lead_params = dict()
+        custom_fields = lead_info.pop('custom_fields', {})
         for key in lead_info.keys():
             if key not in self.LEAD_PARAMS:
                 raise KeyError("'%s' is not a legal lead attribute" % key)
             else:
                 lead_params[key] = lead_info[key]
-
-        url_params.update(_key_coded_dict({'lead': lead_params}))
+        lead_params = _key_coded_dict({'lead': lead_params})
+        for key, value in custom_fields.items():
+            lead_params['lead[custom_field_values][%s]' % key] = value
+        url_params.update(lead_params)
 
         if lead_id is None:
             return self._post_data(url_noparam, url_params)
@@ -2650,6 +2750,35 @@ class BaseAPIService(object):
         see get_lead()
         """
         return self._upsert_lead(lead_info=lead_info, lead_id=lead_id)
+
+    def get_lead_custom_fields(self):
+        """
+        Returns lead custom field definitions
+
+        RESPONSE STRUCTURE
+
+        Note: for dropdown fields, list_options is a dict mapping option IDs
+        to their values
+
+        {'field name':
+            {'date_time': ...
+             'field_type': ...
+             'filterable': ...
+             'id': ...
+             'list_options': ...
+             'name': ...
+             'position': ...
+             'settings': ...
+             'value_editable_only_by_admin': ...
+             'writable': ...
+            },
+        ...}
+        """
+        path = '/custom_fields'
+        url_noparam = self._build_resource_url('leads', 1, path, self.format)
+        url_params = {}
+        response = self._get_data(url_noparam, url_params)
+        return self._unwrap_custom_fields(response['items'])
 
         ##########################
         # Email Functions
