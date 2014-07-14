@@ -274,7 +274,7 @@ class BaseAPIService(object):
     #
     # NOTE: feeds overlap to some degree with tasks (completed only) and notes
     ##########################
-    def _build_feed_resource(self, contact_id=None, lead_id=None, deal_id=None, type=None, format=None):
+    def _build_feed_resource(self, contact_id=None, lead_id=None, deal_id=None, type=None, timestamp=None, format=None):
         """
         Returns a tuple of URL (without parameters) and params that will produce a list of activities (i.e. feed) in
         batches of 20.
@@ -291,9 +291,9 @@ class BaseAPIService(object):
             type='Note' - returns only notes
             type='Call' - returns only phone calls
             type='Task' - returns only completed tasks
-        Paging (NOT IMPLEMENTED):
-            timestamp - paging is achieved using the timestamp parameter, but the value (a long string of mixed
-                number, character, and case) does not present an obvious translation (see paging examples, below)
+        Paging:
+            timestamp - feed paging is achieved using the timestamp parameter, not a traditional page number (see the
+                stateful client for automatic handling of feed paging
         Format:
             format (default None) - see BaseAPIService._apply_format() for accepted values
 
@@ -333,6 +333,9 @@ class BaseAPIService(object):
 
         url_params['api_mailman'] = 'v2'
 
+        if timestamp is not None:
+            url_params['timestamp'] = timestamp
+
         if contact_id is not None:
             path += "/contact/%d" % contact_id
         elif lead_id is not None:
@@ -350,7 +353,7 @@ class BaseAPIService(object):
         url_noparam = self._build_resource_url('feeder', 1, path, format)
         return url_noparam, url_params
 
-    def _get_feed(self, contact_id=None, lead_id=None, deal_id=None, type=None, format=None):
+    def _get_feed(self, contact_id=None, lead_id=None, deal_id=None, type=None, timestamp=None, format=None):
         """
         Returns the most recent 20 activities (i.e. feed) that meet the filter conditions
 
@@ -366,6 +369,9 @@ class BaseAPIService(object):
             type='Note' returns only notes
             type='Call' returns only phone calls
             type='Task' returns only completed tasks
+        Paging:
+            timestamp - feed paging is achieved using the timestamp parameter, not a traditional page number (see the
+                stateful client for automatic handling of feed paging
         Format:
             format (default None) - see BaseAPIService._apply_format() for accepted values
 
@@ -374,10 +380,10 @@ class BaseAPIService(object):
         see get_feed()
         """
         url_noparam, url_params = self._build_feed_resource(contact_id=contact_id, deal_id=deal_id, lead_id=lead_id,
-                                                            type=type, format=format)
+                                                            type=type, timestamp=timestamp, format=format)
         return self._get_data(url_noparam, url_params)
 
-    def get_feed(self, type=None):
+    def get_feed(self, type=None, timestamp=None):
         """
         Returns the most recent 20 activities (i.e. feed) that meet the filter conditions
 
@@ -389,6 +395,9 @@ class BaseAPIService(object):
             type='Note' returns only notes
             type='Call' returns only phone calls
             type='Task' returns only completed tasks
+        Paging:
+            timestamp - feed paging is achieved using the timestamp parameter, not a traditional page number (see the
+                stateful client for automatic handling of feed paging
 
         RESPONSE STRUCTURE
 
@@ -433,55 +442,55 @@ class BaseAPIService(object):
         'id', 'cc', 'subject']
 
         """
-        return self._get_feed(type=type, format=self.format)
+        return self._get_feed(type=type, timestamp=timestamp, format=self.format)
 
-    def get_contact_feed(self, contact_id):
-        return self._get_feed(contact_id=contact_id, format=self.format)
+    def get_contact_feed(self, contact_id, timestamp=None):
+        return self._get_feed(contact_id=contact_id, timestamp=timestamp, format=self.format)
 
-    def get_contact_feed_emails(self, contact_id):
-        return self._get_feed(contact_id=contact_id, type='Email', format=self.format)
+    def get_contact_feed_emails(self, contact_id, timestamp=None):
+        return self._get_feed(contact_id=contact_id, type='Email', timestamp=timestamp, format=self.format)
 
-    def get_contact_feed_notes(self, contact_id):
-        return self._get_feed(contact_id=contact_id, type='Note', format=self.format)
+    def get_contact_feed_notes(self, contact_id, timestamp=None):
+        return self._get_feed(contact_id=contact_id, type='Note', timestamp=timestamp, format=self.format)
 
-    def get_contact_feed_calls(self, contact_id):
-        return self._get_feed(contact_id=contact_id, type='Call', format=self.format)
+    def get_contact_feed_calls(self, contact_id, timestamp=None):
+        return self._get_feed(contact_id=contact_id, type='Call', timestamp=timestamp, format=self.format)
 
-    def get_contact_feed_tasks_completed(self, contact_id):
-        return self._get_feed(contact_id=contact_id, type='Task', format=self.format)
+    def get_contact_feed_tasks_completed(self, contact_id, timestamp=None):
+        return self._get_feed(contact_id=contact_id, type='Task', timestamp=timestamp, format=self.format)
 
-    def get_deal_feed(self, deal_id):
-        return self._get_feed(deal_id=deal_id, format=self.format)
+    def get_deal_feed(self, deal_id, timestamp=None):
+        return self._get_feed(deal_id=deal_id, timestamp=timestamp, format=self.format)
 
-    def get_deal_feed_emails(self, deal_id):
-        return self._get_feed(deal_id=deal_id, type='Email', format=self.format)
+    def get_deal_feed_emails(self, deal_id, timestamp=None):
+        return self._get_feed(deal_id=deal_id, type='Email', timestamp=timestamp, format=self.format)
 
-    def get_deal_feed_notes(self, deal_id):
-        return self._get_feed(deal_id=deal_id, type='Note', format=self.format)
+    def get_deal_feed_notes(self, deal_id, timestamp=None):
+        return self._get_feed(deal_id=deal_id, type='Note', timestamp=timestamp, format=self.format)
 
-    def get_deal_feed_calls(self, deal_id):
-        return self._get_feed(deal_id=deal_id, type='Call', format=self.format)
+    def get_deal_feed_calls(self, deal_id, timestamp=None):
+        return self._get_feed(deal_id=deal_id, type='Call', timestamp=timestamp, format=self.format)
 
-    def get_deal_feed_tasks_completed(self, deal_id):
-        return self._get_feed(deal_id=deal_id, type='Task', format=self.format)
+    def get_deal_feed_tasks_completed(self, deal_id, timestamp=None):
+        return self._get_feed(deal_id=deal_id, type='Task', timestamp=timestamp, format=self.format)
 
-    def get_lead_feed(self, lead_id):
-        return self._get_feed(lead_id=lead_id, format=self.format)
+    def get_lead_feed(self, lead_id, timestamp=None):
+        return self._get_feed(lead_id=lead_id, timestamp=timestamp, format=self.format)
 
-    def get_lead_feed_emails(self, lead_id):
-        return self._get_feed(lead_id=lead_id, type='Email', format=self.format)
+    def get_lead_feed_emails(self, lead_id, timestamp=None):
+        return self._get_feed(lead_id=lead_id, type='Email', timestamp=timestamp, format=self.format)
 
-    def get_lead_feed_notes(self, lead_id):
-        return self._get_feed(lead_id=lead_id, type='Note', format=self.format)
+    def get_lead_feed_notes(self, lead_id, timestamp=None):
+        return self._get_feed(lead_id=lead_id, type='Note', timestamp=timestamp, format=self.format)
 
-    def get_lead_feed_notes_alt(self, lead_id):
-        return self._get_notes(lead_id=lead_id, format=self.format)
+    def get_lead_feed_notes_alt(self, lead_id, timestamp=None):
+        return self._get_notes(lead_id=lead_id, timestamp=timestamp, format=self.format)
 
-    def get_lead_feed_calls(self, lead_id):
-        return self._get_feed(lead_id=lead_id, type='Call', format=self.format)
+    def get_lead_feed_calls(self, lead_id, timestamp=None):
+        return self._get_feed(lead_id=lead_id, type='Call', timestamp=timestamp, format=self.format)
 
-    def get_lead_feed_tasks_completed(self, lead_id):
-        return self._get_feed(lead_id=lead_id, type='Task', format=self.format)
+    def get_lead_feed_tasks_completed(self, lead_id, timestamp=None):
+        return self._get_feed(lead_id=lead_id, type='Task', timestamp=timestamp, format=self.format)
 
     ##########################
     # Tags Functions
