@@ -9,11 +9,6 @@ import platform
 #    'unittest2'
 #]
 
-INSTALL_REQUIRES = [
-    'urllib',
-    'urllib2',
-]
-
 
 setup(
     name='Base CRM Client',
@@ -21,14 +16,9 @@ setup(
     url='http://claytondaley/base-crm-api-client',
     description='Python client for Base CRM',
     long_description=__doc__,
-    packages=find_packages(exclude=("tests", "tests.*",)),
+    #packages=find_packages(exclude=("tests", "tests.*",)),
     zip_safe=False,
-    extras_require={
-        'tests': TEST_REQUIRES,
-    },
     license='BSD',
-    tests_require=TEST_REQUIRES,
-    install_requires=INSTALL_REQUIRES,
     test_suite='tests',
     include_package_data=True,
     classifiers=[
