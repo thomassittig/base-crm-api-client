@@ -11,12 +11,12 @@ import platform
 
 
 setup(
-    name='basecrm_client',
+    name='basecrm-client',
     version='1.0.0',
     url='http://claytondaley/base-crm-api-client',
     description='Python client for Base CRM',
     long_description=__doc__,
-    #packages=find_packages(exclude=("tests", "tests.*",)),
+    packages=find_packages(exclude=("tests", "tests.*",)),
     zip_safe=False,
     license='BSD',
     test_suite='tests',
