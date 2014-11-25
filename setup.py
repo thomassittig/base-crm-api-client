@@ -11,7 +11,7 @@ import platform
 
 
 setup(
-    name='Base CRM Client',
+    name='basecrm_client',
     version='1.0.0',
     url='http://claytondaley/base-crm-api-client',
     description='Python client for Base CRM',
